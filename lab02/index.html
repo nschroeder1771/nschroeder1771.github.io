@@ -44,20 +44,20 @@
       })
 
 
-      var LeafIcon = L.Icon.extend({
+      var busIcon = L.Icon.extend({
         options: {
-          shadowUrl: 'https://nschroeder1771.github.io/lab02/leaf-shadow.png',
+          // shadowUrl: 'https://nschroeder1771.github.io/lab02/leaf-shadow.png',
           iconSize:     [38, 60],
-          shadowSize:   [50, 58],
+        //  shadowSize:   [50, 58],
           iconAnchor:   [22, 94],
-          shadowAnchor: [4, 62],
+        //  shadowAnchor: [4, 62],
           popupAnchor:  [-3, -76]
         }
       });
 
-      var greenIcon = new LeafIcon({iconUrl: 'https://nschroeder1771.github.io/lab02/leaf-green.png'});
+      var icon = new LeafIcon({iconUrl: 'https://nschroeder1771.github.io/lab02/icons8-bus-stop-48.png'});
 */
-      var bus = new L.geoJSON(bus).addTo(map).bindPopup("Bus Stop");   // {icon: greenIcon}
+      var bus = new L.geoJSON(bus).addTo(map).bindPopup("Bus Stop");   // {icon: icon}
 
   </script>
 </body>
