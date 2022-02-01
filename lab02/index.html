@@ -50,7 +50,7 @@
           pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, geojsonMarkerOptions);
           }
-      }).addTo(map).bindPopup("Bus Stop");
+      }).addTo(map).bindPopup("<p>Bus Stop " + "bus.features.properties.ID</p>");
 
       //var bus = new L.geoJSON(bus).addTo(map).bindPopup("Bus Stop");
 
