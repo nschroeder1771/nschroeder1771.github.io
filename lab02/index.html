@@ -45,12 +45,14 @@
           opacity: 1,
           fillOpacity: 0.8
       };
-
+      
+      var id = bus.features.properties.ID;
+    
       var bus = L.geoJson(bus, {
           pointToLayer: function (feature, latlng) {
             return L.circleMarker(latlng, geojsonMarkerOptions);
           }
-      }).addTo(map).bindPopup("Bus Stop");
+      }).addTo(map).bindPopup("Bus Stop " + id);
 
       //var bus = new L.geoJSON(bus).addTo(map).bindPopup("Bus Stop");
 
