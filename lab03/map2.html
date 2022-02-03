@@ -46,9 +46,60 @@
             ext: 'png'
           }).addTo(map);
 
-          var provinces = L.geoJson(provinces).addTo(map);s
+          function getColor(value) {
+            return value > 50000000 ? '#54278f':
+                  value > 25000000  ? '#756bb1':
+                  value > 10000000  ? '#9e9ac8':
+                  value > 5000000  ? '#cbc9e2':
+                                      '#f2f0f7';
+          }
 
-          var coviddata = L.geoJson(coviddata).addTo(map);
+          function style(feature) {
+            return {
+              fillColor: getColor(feature.properties.POP10),
+              weight: 2,
+              opacity: 1,
+              color: 'gray',
+              fillOpacity: 0.9
+            }
+          }
+
+          var minValue = 100;
+          var minRadius = 5;
+
+          function calcRadius(val) {
+            return 0.9 * Math.pow(val/minValue, 0.7) * minRadius;
+          }
+
+          var provinces = new L.geoJson(provinces, {style:style}).addTo(map);
+
+          var covidData = new L.geoJson(covidData, {
+            pointToLayer: function(feature, latlng){
+              return L.circleMarker(latlng, {
+                color: '#f44336',
+                opacity: 1,
+                weight: 2,
+                fillColor:'#d27979',
+                fillOpacity: 0.5,
+                radius: calcRadius(feature.properties.covid)
+              })
+            }
+          }).addTo(map);
+
+          var basemaps = {
+            "Light Canvas": canvas,
+            "Satellite Imagery": imagery
+          };
+
+          var overlaymaps = {
+            "China Provinces": provinces,
+            "Covid Data": covidData
+          };
+
+          L.control.layers(basemaps, overlaymaps, {collapsed:false}).addTo(map);
+
+          var legend = L.control({position: 'bottomleft'});
+          legend.onAdd = function(map);
 
         </script>
 
