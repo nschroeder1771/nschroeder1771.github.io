@@ -96,7 +96,7 @@
             return 0.9 * Math.pow(val/minValue, 0.7) * minRadius;
           }
 
-          var provinces = new L.geoJson(provinces, {style:style}).addTo(map);
+          var provinces = new L.geoJson(provinces, {style:style}).addTo(map); //remove addTo(map) for the layer to not show up on launch
 
           var covidData = new L.geoJson(covidData, {
             onEachFeature: onEachFeature,
@@ -110,7 +110,7 @@
                 radius: calcRadius(feature.properties.covid)
               })
             }
-          }).addTo(map);
+          }).addTo(map);  //remove addTo(map) for the layer to not show up on launch
 
           var basemaps = {
             "Light Canvas": canvas,
