@@ -18,14 +18,15 @@
 
     <script>
 
-      require(["esri/Map", "esri/layers/TileLayer", "esri/layers/GeoJSONLayer", "esri/views/MapView", "esri/layers/FeatureLayer", "esri/widgets/Legend"], function(Map, TileLayer, GeoJSONLayer, MapView, FeatureLayer, Legend) {
+      require(["esri/Map", "esri/layers/TileLayer", "esri/layers/GeoJSONLayer", "esri/views/MapView", "esri/layers/FeatureLayer", "esri/widgets/Legend"],
+      function(Map, TileLayer, GeoJSONLayer, MapView, FeatureLayer, Legend) {
 
-        const url = "https://opendata.arcgis.com/datasets/5aa5f17d117f409d8608ec1bf6de06d6_0.geojson";
+        const url = "https://opendata.arcgis.com/datasets/e311ff702f1b491997a770607633ab07_0.geojson";
 
         const renderer = {
           type: "simple",
           field: "CNTASSDVAL",
-            legendOptions: {title: "Lab 4 Symbols"},
+          legendOptions: {title: "Assessed Values In Lincoln"},
           symbol: {
             type: "simple-marker",
             color: "red",
@@ -60,7 +61,7 @@
 
         const geoJsonLayer = new GeoJSONLayer({
           url: url,
-          copyright: "GEOG 417/817",
+          copyright: "GEOG 417/817 | Nick Schroeder",
           renderer: renderer
         })
 
@@ -69,7 +70,7 @@
         });
 
         var basemap = new TileLayer({
-          url:"https://gisext.lincoln.ne.gov/arcgis/rest/services/GIS/LancoBasemap/MapServer/"
+          url:"https://gisext.lincoln.ne.gov/arcgis/rest/services/GIS/LancoBasemap/MapServer/",
         });
 
         var map = new Map({
@@ -85,9 +86,9 @@
 
         const legend = new Legend({
           view: view,
-          layerlnfos: [{
+          layerInfos: [{
             layer: geoJsonLayer,
-            title: "Legend"
+            title: "Lab 4 Symbols"
           }]
         });
 
