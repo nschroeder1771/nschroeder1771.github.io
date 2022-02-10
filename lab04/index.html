@@ -18,14 +18,50 @@
 
     <script>
 
-      require(["esri/Map", "esri/layers/TileLayer", "esri/layers/GeoJSONLayer", "esri/layers/FeatureLayer", "esri/views/MapView"], function(Map, TileLayer, GeoJSONLayer, FeatureLayer, MapView) {
+      require(["esri/Map", "esri/layers/TileLayer", "esri/layers/GeoJSONLayer", "esri/views/MapView", "esri/layers/FeatureLayer", "esri/widgets/Legend"], function(Map, TileLayer, GeoJSONLayer, MapView, FeatureLayer, Legend) {
 
         const url = "https://opendata.arcgis.com/datasets/5aa5f17d117f409d8608ec1bf6de06d6_0.geojson";
 
+        const renderer = {
+          type: "simple",
+          field: "CNTASSDVAL",
+            legendOptions: {title: "Lab 4 Symbols"},
+          symbol: {
+            type: "simple-marker",
+            color: "red",
+            outline: {
+              color: "gray"
+            }
+          },
+           visualVariables: [
+            {
+              type: "size",
+              field: "CNTASSDVAL",
+              stops: [
+                {
+                  value: 100000,
+                   size: "7px",
+                   label: "Low"
+                },
+                {
+                   value: 500000,
+                    size: "17px",
+                    label: "Medium"
+                },
+                {
+                    value: 1000000,
+                     size: "26px",
+                     label: "High"
+                }
+              ]
+            }
+          ]
+        };
+
         const geoJsonLayer = new GeoJSONLayer({
           url: url,
-          copyright: "GEOG 417/817"
-          //renderer:
+          copyright: "GEOG 417/817",
+          renderer: renderer
         })
 
         var featureLayer = new FeatureLayer({
@@ -46,9 +82,21 @@
           zoom: 17,
           center: [-96.68, 40.81] // longitude, latitude – change this as needed
         });
+
+        const legend = new Legend({
+          view: view,
+          layerlnfos: [{
+            layer: geoJsonLayer,
+            title: "Legend"
+          }]
+        });
+
+        map.add(featureLayer);
+        view.ui.add(legend, "bottom-left");
+
       });
 
-      map.add(featureLayer);
+
 
     </script>
 
