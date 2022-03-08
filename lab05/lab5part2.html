@@ -102,10 +102,10 @@
           pointToLayer: function (data, latlng) {
             var diff = (data.properties.DIFF);
             return L.circleMarker(latlng, {
-              radius: calcRadius(data.properties.EV),
+              radius: calcRadius(data.properties.EV_EV),
               color: getColorFor(data.properties.DIFF),
               fillColor: getColorFor(data.properties.DIFF),
-            }).bindPopup('<p>' + 'Electoral votes:' + data.properties.EV + '</p>');
+            }).bindPopup('<p>' + 'Electoral votes:' + data.properties.EV_EV + '</p>');
           },
         });
         timelineControl.addTo(map);
