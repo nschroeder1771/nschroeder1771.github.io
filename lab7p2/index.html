@@ -23,7 +23,7 @@ noVersion/leafletfuse.css" type="text/css"/>
 ui.css" type="text/css">
       <script src="https://dsps.lib.uiowa.edu/placing/public/jqueryUiTouchPunch-
 0.2.2/jquery.ui.touch-punch.min.js"></script>
-      <script src="https://dsps.lib.uiowa.edu/placing/omadata.js"></script>
+      <script src="https://nschroeder1771.github.io/lab7p2/iowa.js"></script>
   <link rel="stylesheet" type="text/css" href="https://dsps.lib.uiowa.edu/placing/css/style.css">
   <link rel="stylesheet" type="text/css" href="https://dsps.lib.uiowa.edu/placing/css/navwrap.css">
   </head>
@@ -41,8 +41,8 @@ ui.css" type="text/css">
                   });
 
         var map = L.map('map', {
-          center: [41.259944, -95.937057],
-          zoom: 15,
+          center: [41.619549, -93.598022],
+          zoom: 7,
           layers: [basemap]
         });
         // onEachFeature generate a popup for each location
@@ -50,8 +50,8 @@ ui.css" type="text/css">
           if (feature.properties) {
             var prop = feature.properties;
             // make a cool little html popup with properties
-              var popup = '<h3>'+prop['FNAME']+' '+prop['LNAME']+'</h3>'+'<strong>Race/Gender: </strong>'+prop['RACE']+' '+prop['GENDER']+'<br><strong>Occupation: </strong>'+prop['OCCUPATION']+'<br><strong>Age: </strong>'
-              +prop['AGE']+'<br><strong>Family Estate: $</strong>'+prop['PERSREAL']+'<br> <strong>Fam. Real Estate: $</strong>'+prop['FAMREAL']+'<br><strong>Address:  </strong>'+prop['ADDRESS']+'<br><br><i>details from Census Bureau and city directories</i>';
+              var popup = '<h3>'+prop['name']//'+prop['LNAME']+'</h3>'+'<strong>Race/Gender: </strong>'+prop['RACE']+' '+prop['GENDER']+'<br><strong>Occupation: </strong>'+prop['OCCUPATION']+'<br><strong>Age: </strong>'
+              //+prop['AGE']+'<br><strong>Family Estate: $</strong>'+prop['PERSREAL']+'<br> <strong>Fam. Real Estate: $</strong>'+prop['FAMREAL']+'<br><strong>Address:  </strong>'+prop['ADDRESS']+'<br><br><i>details from Census Bureau and city directories</i>';
               // add known info about event to the description
 
             // you must create a layer property on each feature or else
@@ -114,7 +114,7 @@ ui.css" type="text/css">
         var searchOptions = {
           position: 'topleft',
           title: 'Search',
-          placeholder: 'Example: John Smith',
+          placeholder: 'Example: Opera House',
           maxResultLength: 10,
           caseSensitive: false,
           showInvisibleFeatures: true,
@@ -123,16 +123,16 @@ ui.css" type="text/css">
           showResultFct: function(feature, container) {
             props = feature.properties;
             var name = L.DomUtil.create('b', null, container);
-            name.innerHTML = props.LNAME;
+            name.innerHTML = props.name;
             container.appendChild(L.DomUtil.create('br', null, container));
-            var cat = props.LNAME ? props.FNAME : props.OCCUPATION,
+            var cat = props.name;
                 info = cat;
             container.appendChild(document.createTextNode(info));
           }
         };
         var searchControl = L.control.fuseSearch(searchOptions);
         map.addControl(searchControl);
-        searchControl.indexFeatures(omaJson, ['LNAME']);
+        searchControl.indexFeatures(omaJson, ['name']);
         displayFeatures(omaJson, searchLayer);
         function displayFeatures(features, layer) {
           var popup = L.DomUtil.create('div', 'tiny-popup', map.getContainer());
