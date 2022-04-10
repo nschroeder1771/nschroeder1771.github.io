@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+   <head>
+    <title>Lab 8 | D3</title>
+    <script src="https://d3js.org/d3.v5.min.js" charset="utf-8"></script>
+    <script src="https://nschroeder1771.github.io/lab8/streets.js"></script>
+    <script src="https://nschroeder1771.github.io/lab8/stops.js"></script>
+
+    <style>
+        body {
+            position: absolute;
+            font-family: "Proxima Nova", "Montserrat", sans-serif;
+        }
+        h1, h2 {
+            position: absolute;
+        background: white;
+            left: 10px;
+            font-size: 1.3em;
+            font-weight: 100;
+        }
+        h2 {
+            top: 30px;
+            font-size: 1em;
+        }
+        .hover {
+            fill: yellow;
+        }
+      </style>
+   </head>
+    <body>
+      <h1>Bustop Routes In Lincoln</h1>
+    <h2></h2>
+    <h3></h3>
+      <script>
+//we will be putting our D3 code here within body script tags
+
+      //width and height of the visualization
+      var width = 1000;
+      var height = 600;
+
+      var color = "#000000"
+/*
+      var minVal = 1900;
+      var maxVal = 2020;
+      var ramp = d3.scaleLinear().domain([minVal,maxVal]).range([lowColor,highColor]);
+*/
+      //create the SVG
+      var svg = d3.select( "body" )
+        .append( "svg" )
+        .attr( "width", width )
+        .attr( "height", height );
+      // Append empty placeholder g element to the SVG
+      // g will contain geometry elements
+      var g = svg.append( "g" );
+
+      // Set Projection Parameters
+      var albersProjection = d3.geoAlbers()
+          .scale( 2850000 )
+          .rotate( [96.6837,0] )
+          .center( [0, 40.82] )
+          .translate( [width/2,height/2] );
+
+      var geoPath = d3.geoPath()
+        .projection( albersProjection );
+
+        //select element; bind data; append attributes; apply
+      g.selectAll( "path" )
+          .data( streets.features )
+          .enter()
+          .append( "path" )
+          .attr( "fill", "#ccc" )
+          .attr( "stroke", "#333")
+          .attr( "d", geoPath )
+          .on("mouseover", function(d){
+              //populate h2 with "built in" & the year built field from the json
+              d3.select("h2").text("Street Name: " + d.properties.STNAME);
+              d3.select(this).attr("class","buildingdata hover");
+              })
+              //here, D3 to replace text interactively based on building data
+              .on("mouseout", function(d){
+              d3.select("h2").text("");
+              d3.select(this).attr("class","buildingdata");
+            });
+
+      var lnk_json = svg.append( "g" );
+
+      lnk_json.selectAll( "path" )
+        .data( stops.features )
+        .enter()
+        .append( "path" )
+        .attr( "fill", color )
+        .attr( "stroke", "#999" )
+        .attr( "d", geoPath )
+        .attr("class","buildingdata")
+        .on("mouseover", function(d){
+            //populate h2 with "built in" & the year built field from the json
+            d3.select("h2").text("Route Number: " + d.properties.Route_Numb + "  Intersection: " + d.properties.Intersect1);
+            d3.select(this).attr("class","buildingdata hover");
+            })
+            //here, D3 to replace text interactively based on building data
+            .on("mouseout", function(d){
+            d3.select("h2").text("");
+            d3.select(this).attr("class","buildingdata");
+          });
+
+    </script>
+   </body>
+</html>
