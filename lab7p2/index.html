@@ -114,7 +114,7 @@ ui.css" type="text/css">
         var searchOptions = {
           position: 'topleft',
           title: 'Search',
-          placeholder: 'Example: John Smith',
+          placeholder: 'Example: Opera House',
           maxResultLength: 10,
           caseSensitive: false,
           showInvisibleFeatures: true,
@@ -132,7 +132,7 @@ ui.css" type="text/css">
         };
         var searchControl = L.control.fuseSearch(searchOptions);
         map.addControl(searchControl);
-        searchControl.indexFeatures(omaJson, ['LNAME']);
+        searchControl.indexFeatures(omaJson, ['name']);
         displayFeatures(omaJson, searchLayer);
         function displayFeatures(features, layer) {
           var popup = L.DomUtil.create('div', 'tiny-popup', map.getContainer());
