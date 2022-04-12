@@ -114,7 +114,7 @@ ui.css" type="text/css">
         var searchOptions = {
           position: 'topleft',
           title: 'Search',
-          placeholder: 'Example: Opera House',
+          placeholder: 'Example: John Smith',
           maxResultLength: 10,
           caseSensitive: false,
           showInvisibleFeatures: true,
@@ -123,16 +123,16 @@ ui.css" type="text/css">
           showResultFct: function(feature, container) {
             props = feature.properties;
             var name = L.DomUtil.create('b', null, container);
-            name.innerHTML = props.name;
+            name.innerHTML = props.LNAME;
             container.appendChild(L.DomUtil.create('br', null, container));
-            var cat = props.name;
+            var cat = props.LNAME ? props.FNAME : props.OCCUPATION,
                 info = cat;
             container.appendChild(document.createTextNode(info));
           }
         };
         var searchControl = L.control.fuseSearch(searchOptions);
         map.addControl(searchControl);
-        searchControl.indexFeatures(omaJson, ['name']);
+        searchControl.indexFeatures(omaJson, ['LNAME']);
         displayFeatures(omaJson, searchLayer);
         function displayFeatures(features, layer) {
           var popup = L.DomUtil.create('div', 'tiny-popup', map.getContainer());
