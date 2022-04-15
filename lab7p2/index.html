@@ -50,7 +50,7 @@ ui.css" type="text/css">
           if (feature.properties) {
             var prop = feature.properties;
             // make a cool little html popup with properties
-              var popup = '<h3>'+prop['name']//'+prop['LNAME']+'</h3>'+'<strong>Race/Gender: </strong>'+prop['RACE']+' '+prop['GENDER']+'<br><strong>Occupation: </strong>'+prop['OCCUPATION']+'<br><strong>Age: </strong>'
+              var popup = '<h3>' +prop['name'] + "</h3><br>" +'Time: '+ prop['time'];//'+prop['time']+'</h3>'+'<strong>Time: </strong>'+prop['time']+' '+prop['GENDER']+'<br><strong>Occupation: </strong>'+prop['OCCUPATION']+'<br><strong>Age: </strong>'
               //+prop['AGE']+'<br><strong>Family Estate: $</strong>'+prop['PERSREAL']+'<br> <strong>Fam. Real Estate: $</strong>'+prop['FAMREAL']+'<br><strong>Address:  </strong>'+prop['ADDRESS']+'<br><br><i>details from Census Bureau and city directories</i>';
               // add known info about event to the description
 
@@ -123,9 +123,9 @@ ui.css" type="text/css">
           showResultFct: function(feature, container) {
             props = feature.properties;
             var name = L.DomUtil.create('b', null, container);
-            name.innerHTML = props.LNAME;
+            name.innerHTML = props.name;
             container.appendChild(L.DomUtil.create('br', null, container));
-            var cat = props.LNAME ? props.FNAME : props.OCCUPATION,
+            var cat = props.name ? props.time : props.OCCUPATION,
                 info = cat;
             container.appendChild(document.createTextNode(info));
           }
