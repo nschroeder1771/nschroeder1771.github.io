@@ -1,1 +1,208 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Final Project</title>
 
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.4/dist/leaflet.css"
+        crossorigin=""/>
+
+        <script src="https://unpkg.com/leaflet@1.3.4/dist/leaflet.js"
+        crossorigin=""></script>
+
+        <script src="https://nschroeder1771.github.io/final/simplified.js"></script>
+
+        <script src="https://nschroeder1771.github.io/final/states.js"></script>
+
+        <style type="text/css">
+        html, body { margin: 0; padding: 0; height: 100%;}
+        #map { min-height: 100%;}
+          .legend {
+              padding: 6px 8px;
+              line-height: 18px;
+              background: rgba(220,220,220,0.9);
+              box-shadow: 0 0 15px rgba(0,0,0,0.2);
+              border-radius: 5px;
+          }
+          .legend i {
+              width: 18px;
+              height: 18px;
+              float: left;
+              margin-right: 8px;
+              opacity: 0.7;
+          }
+        </style>
+
+    </head>
+    <body>
+
+        <div id="map"></div>
+
+        <script type="text/javascript">
+
+          var onEachFeature = function(feature, layer) {
+            if (feature.properties) {
+              var prop = feature.properties;
+
+              var popup = '<h3>'+prop['PARKNAME'] + ' ' + prop['UNIT_TYPE'] + '</h3>';
+
+              feature.layer = layer;
+              layer.bindPopup(popup);
+            }
+          }
+
+          var onEachRegion = function(feature, layer) {
+            if (feature.properties) {
+              var prop = feature.properties;
+
+              var popup = '<h3>'+prop['REGION'] + '</h3>';
+
+              feature.layer = layer;
+              layer.bindPopup(popup);
+            }
+          }
+
+          var map = L.map('map', {
+              center: [39.8355, -99.0909],
+              zoom: 5
+          });
+
+          var imagery = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/terrain/{z}/{x}/{y}{r}.{ext}', {
+            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            subdomains: 'abcd',
+            minZoom: 0,
+            maxZoom: 18,
+            ext: 'png'
+          });
+
+          var canvas = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner/{z}/{x}/{y}{r}.{ext}', {
+            attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            subdomains: 'abcd',
+            minZoom: 0,
+            maxZoom: 18,
+            ext: 'png'
+          }).addTo(map);
+
+          function getColor(value) {
+            return value == "National Park" ? '#0000ff':
+                  value == "National Monument"  ? '#ff0000':
+                  value == "National Memorial" ? '#065535':
+                                                '#ffe4e1'
+          }
+
+          function getRegionColor(value) {
+            return value == "Midwest" ? '#3be1ed':
+                  value == "Intermountain"  ? '#e8e235':
+                  value == "Pacific West" ? '#2cd42c':
+                  value == "Northeast" ? '#F92B2F':
+                  value == "Southeast" ? '#c837e6':
+                  value == "Island" ? '#065535':
+                  value == "Capital" ? '#000000':
+                  value == "Alaska" ? '#1621ba':
+                                       '#000dfd'
+          }
+
+          function style(feature) {
+            return {
+              fillColor: getColor(feature.properties.UNIT_TYPE),
+              weight: 2,
+              opacity: 1,
+              color: 'gray',
+              fillOpacity: 0.9
+            }
+          }
+
+          function regionStyle(feature) {
+            return {
+              fillColor: getRegionColor(feature.properties.REGION),
+              weight: 2,
+              opacity: 0.3,
+              color: 'gray',
+              fillOpacity: 0.2
+            }
+          }
+
+          var simplified = new L.geoJson(simplified, {
+            style:style,
+            onEachFeature: onEachFeature
+        }); //Q3: remove addTo(map) for the layer to not show up on launch
+
+          var states = new L.geoJson(states, {
+            onEachFeature: onEachRegion,
+            style: regionStyle
+          }).addTo(map); //Q3: remove addTo(map) for the layer to not show up on launch
+
+          var basemaps = {
+            "Light Canvas": canvas,
+            "Satellite Imagery": imagery
+          };
+
+          var overlaymaps = {
+            "Park Boundaries": simplified,
+            "Regions": states
+          };
+
+          L.control.layers(basemaps, overlaymaps, {collapsed:false}).addTo(map);
+
+          var legend = L.control({position: 'bottomleft'});
+
+          var legend2 = L.control({position: 'bottomright'});
+
+          legend.onAdd = function(map) {
+            var div = L.DomUtil.create('div', 'legend'),
+            grades = ["National Park", "National Monument", "National Memorial"];   //Q2: Add another value in for a new class on the legend
+
+            div.innerHTML = '<b>National Parks <br><br> </b>'
+
+            for(var i = 0; i < grades.length; i++) {
+              div.innerHTML +=
+              '<i style="background:' + getColor(grades[i]) + '"></i>' +
+              grades[i] + (grades[i + 1] ? '<br><br>' : '');
+            }
+            return div;
+          };
+
+          legend2.onAdd = function(map) {
+            var div = L.DomUtil.create('div', 'legend'),
+            grades2 = ["Midwest", "Intermountain", "Pacific West", "Northeast", "Southeast", "Island", "Capital", "Alaska" ];   //Q2: Add another value in for a new class on the legend
+
+            div.innerHTML = '<b>Regions <br><br> </b>'
+
+            for(var i = 0; i < grades2.length; i++) {
+              div.innerHTML +=
+              '<i style="background:' + getRegionColor(grades2[i]) + '"></i>' +
+              grades2[i] + (grades2[i + 1] ? '<br><br>' : '');
+            }
+            return div;
+          };
+
+          legend2.addTo(map);
+
+          map.on('overlayremove', function(eventLayer) {
+            if (eventLayer.name == "Park Boundaries") {
+              map.removeControl(legend);
+            }
+          });
+
+          map.on('overlayadd', function(eventLayer) {
+            if (eventLayer.name == "Park Boundaries") {
+              legend.addTo(map);
+            }
+          });
+
+          map.on('overlayremove', function(eventLayer) {
+            if (eventLayer.name == "Regions") {
+              map.removeControl(legend2);
+            }
+          });
+
+          map.on('overlayadd', function(eventLayer) {
+            if (eventLayer.name == "Regions") {
+              legend2.addTo(map);
+            }
+          });
+
+        </script>
+
+   </body>
+
+</html>
