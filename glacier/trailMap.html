@@ -1,0 +1,138 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
+    <title>ArcGIS API for JavaScript Tutorials: Display a map</title>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://js.arcgis.com/4.24/esri/themes/light/main.css">
+    <script src="https://js.arcgis.com/4.24/"></script>
+
+    <script>
+      require(["esri/config","esri/Map", "esri/views/MapView", "esri/layers/FeatureLayer"], function (esriConfig,Map, MapView, FeatureLayer) {
+
+        esriConfig.apiKey = "AAPK9d2790ff742e443e89cc86f66d3a75ddPgIAh-OuDZpPUniaw_5WJ7FGd5z-F8c2HSB_abqQN6ffsn8lJPu6h1SvSkj1va-I";
+
+        const map = new Map({
+          basemap: "arcgis-topographic" // Basemap layer service
+        });
+
+        const view = new MapView({
+          map: map,
+          center: [-113.7870, 48.7596], // Longitude, latitude
+          zoom: 8, // Zoom level
+          container: "viewDiv" // Div element
+        });
+
+        const trailheadsRenderer = {
+        "type": "simple",
+        "symbol": {
+          "type": "picture-marker",
+          "url": "http://static.arcgis.com/images/Symbols/NPS/npsPictograph_0231b.png",
+          "width": "18px",
+          "height": "18px"
+        }
+      }
+
+        const trailheadsLabels = {
+        symbol: {
+          type: "text",
+          color: "#FFFFFF",
+          haloColor: "#5E8D74",
+          haloSize: "2px",
+          font: {
+            size: "12px",
+            family: "Noto Sans",
+            style: "italic",
+            weight: "normal"
+          }
+        },
+
+        labelPlacement: "above-center",
+        labelExpressionInfo: {
+          expression: "$feature.POILABEL"
+        }
+      };
+
+        const trailsLabels = {
+        symbol: {
+          type: "text",
+          color: "#FFFFFF",
+          haloColor: "#5E8D74",
+          haloSize: "2px",
+          font: {
+            size: "12px",
+            family: "Noto Sans",
+            style: "italic",
+            weight: "normal"
+          }
+        },
+
+        labelPlacement: "above-center",
+        labelExpressionInfo: {
+          expression: "$feature.MILES"
+        }
+      };
+
+        const trailsNameLabels = {
+        symbol: {
+          type: "text",
+          color: "#FFFFFF",
+          haloColor: "#5E8D74",
+          haloSize: "2px",
+          font: {
+            size: "12px",
+            family: "Noto Sans",
+            style: "italic",
+            weight: "normal"
+          }
+        },
+
+        labelPlacement: "above-center",
+        labelExpressionInfo: {
+          expression: "$feature.MILES"
+        }
+      };
+
+        const popupTrails = {
+          "title": "{NAME}",
+          "content": "<b>Sub District:</b> {SUBDIST}"
+        }
+
+        const trailheads = new FeatureLayer({
+          url: "https://services8.arcgis.com/jzdN07B7ZhRTxuzU/arcgis/rest/services/trailheads/FeatureServer",
+          renderer: trailheadsRenderer,
+          labelingInfo: trailheadsLabels
+        });
+        map.add(trailheads);
+
+        const trails = new FeatureLayer({
+          url: "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GLAC_Trails/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson",
+          labelingInfo: [trailsLabels,trailsNameLabels],
+          popupTemplate: popupTrails
+        });
+        map.add(trails);
+
+
+       /* const visitorCenters = new FeatureLayer({
+          url: "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GLAC_Points_of_Interest/FeatureServer/0/query?f=json&where=(POITYPE%20IN%20('Visitor%20Center'))&outFields=*"
+        });
+        map.add(visitorCenters); */
+      });
+    </script>
+
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+  </body>
+</html>
