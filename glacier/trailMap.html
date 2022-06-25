@@ -2,7 +2,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no" />
-    <title>Glacier Trails</title>
+    <title>ArcGIS API for JavaScript Tutorials: Display a map</title>
 
     <style>
       html,
@@ -48,7 +48,7 @@
         symbol: {
           type: "text",
           color: "#FFFFFF",
-          haloColor: "#5E8D74",
+          haloColor: "#972ef2",
           haloSize: "2px",
           font: {
             size: "12px",
@@ -109,16 +109,21 @@
           "content": "<b>Sub District:</b> {SUBDIST}"
         }
 
+        const popupTrailheads = {
+          "title": "{POILABEL} Trailhead"
+        }
+
         const trailheads = new FeatureLayer({
           url: "https://services8.arcgis.com/jzdN07B7ZhRTxuzU/arcgis/rest/services/trailheads/FeatureServer",
           renderer: trailheadsRenderer,
-          labelingInfo: trailheadsLabels
+          labelingInfo: trailheadsLabels,
+          popupTemplate: popupTrailheads
         });
         map.add(trailheads);
 
         const trails = new FeatureLayer({
           url: "https://services1.arcgis.com/fBc8EJBxQRMcHlei/arcgis/rest/services/GLAC_Trails/FeatureServer/0/query?outFields=*&where=1%3D1&f=geojson",
-          labelingInfo: [trailsLabels,trailsNameLabels],
+          labelingInfo: trailsLabels,
           popupTemplate: popupTrails
         });
         map.add(trails);
