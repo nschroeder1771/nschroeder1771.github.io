@@ -1,1 +1,1 @@
-# Nick Schroeder GEOG 417
+# Nick Schroeder
