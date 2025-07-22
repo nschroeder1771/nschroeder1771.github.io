@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "kobuk_valley_national_park",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "element": "way", "id": 496219044, "highway": "footway", "name": "Onion Portage", "note": "This is not an actual footway but is a well used caribou crossing", "source:name": "USGS Topo;Dictionary of Alaska Place Names (Orth,1967)" }, "geometry": { "type": "LineString", "coordinates": [ [ -158.3186924, 67.1227619 ], [ -158.3105117, 67.1192827 ], [ -158.2949639, 67.1131078 ], [ -158.269359, 67.1063256 ] ] } }
+]
+}

@@ -1,0 +1,9 @@
+{
+"type": "FeatureCollection",
+"name": "dry_tortugas_national_park",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "element": "way", "id": 183902026, "highway": "footway" }, "geometry": { "type": "LineString", "coordinates": [ [ -82.8721034, 24.6273594 ], [ -82.8721736, 24.6273821 ], [ -82.8722613, 24.6273349 ], [ -82.8724433, 24.6275583 ], [ -82.8724746, 24.6275988 ], [ -82.8725107, 24.6276458 ] ] } },
+{ "type": "Feature", "properties": { "element": "way", "id": 744793739, "highway": "footway" }, "geometry": { "type": "LineString", "coordinates": [ [ -82.8724746, 24.6275988 ], [ -82.8723367, 24.6275787 ], [ -82.872314, 24.6275533 ], [ -82.8721736, 24.6273821 ] ] } }
+]
+}
