@@ -23,6 +23,8 @@ fetch('us-states.geojson')
     }).addTo(map);
   });
 
+// --- Utility functions ---
+
 function getColor(status) {
   switch (status) {
     case "Home": return "#1b5e20";
@@ -38,34 +40,46 @@ function getStatus(stateName) {
   return localStorage.getItem(`travel-${stateName}`) || "None";
 }
 
-function saveStatus(stateName, value) {
-  localStorage.setItem(`travel-${stateName}`, value);
-  stateLayer.eachLayer(layer => {
-    if (layer.feature.properties.name === stateName) {
-      layer.setStyle({ fillColor: getColor(value) });
-    }
-  });
+function saveStatus(stateName, newStatus, layer) {
+  // Save to localStorage
+  localStorage.setItem(`travel-${stateName}`, newStatus);
+
+  // Update layer color instantly
+  layer.setStyle({ fillColor: getColor(newStatus) });
+
+  // Close popup (optional)
+  layer.closePopup();
 }
+
+// --- Popup builder ---
 
 function openPopup(feature, layer) {
   const stateName = feature.properties.name;
   const current = getStatus(stateName);
 
-  const popupContent = `
-    <div class="popup-form">
-      <h3>${stateName}</h3>
-      <label for="status-${stateName}">Travel Type:</label>
-      <select id="status-${stateName}">
-        <option value="None"${current === "None" ? " selected" : ""}>Not Visited</option>
-        <option value="Home"${current === "Home" ? " selected" : ""}>Home State</option>
-        <option value="Overnight"${current === "Overnight" ? " selected" : ""}>Stayed Overnight</option>
-        <option value="Day Trip"${current === "Day Trip" ? " selected" : ""}>Day Trip</option>
-        <option value="Drive-Through"${current === "Drive-Through" ? " selected" : ""}>Drove Through</option>
-        <option value="Layover"${current === "Layover" ? " selected" : ""}>Airport Layover Only</option>
-      </select>
-      <button onclick="saveStatus('${stateName}', document.getElementById('status-${stateName}').value)">Save</button>
-    </div>
+  const popupDiv = document.createElement("div");
+  popupDiv.classList.add("popup-form");
+
+  popupDiv.innerHTML = `
+    <h3>${stateName}</h3>
+    <label>Travel Type:</label><br>
+    <select id="status-select">
+      <option value="None"${current === "None" ? " selected" : ""}>Not Visited</option>
+      <option value="Home"${current === "Home" ? " selected" : ""}>Home State</option>
+      <option value="Overnight"${current === "Overnight" ? " selected" : ""}>Stayed Overnight</option>
+      <option value="Day Trip"${current === "Day Trip" ? " selected" : ""}>Day Trip</option>
+      <option value="Drive-Through"${current === "Drive-Through" ? " selected" : ""}>Drove Through</option>
+      <option value="Layover"${current === "Layover" ? " selected" : ""}>Airport Layover Only</option>
+    </select><br>
+    <button id="save-btn">💾 Save</button>
   `;
 
-  layer.bindPopup(popupContent).openPopup();
+  // Bind popup HTML to layer
+  layer.bindPopup(popupDiv).openPopup();
+
+  // Add live event listener to the save button
+  popupDiv.querySelector("#save-btn").addEventListener("click", () => {
+    const selectedValue = popupDiv.querySelector("#status-select").value;
+    saveStatus(stateName, selectedValue, layer);
+  });
 }
