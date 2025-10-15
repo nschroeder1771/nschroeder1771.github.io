@@ -18,7 +18,11 @@ fetch('us-states.geojson')
         fillOpacity: 0.7
       }),
       onEachFeature: (feature, layer) => {
-        layer.on('click', () => openPopup(feature, layer));
+        // Store state name directly on layer for easy access later
+        layer.stateName = feature.properties.name;
+
+        // Show popup on click
+        layer.on('click', () => openPopup(layer));
       }
     }).addTo(map);
   });
@@ -40,22 +44,25 @@ function getStatus(stateName) {
   return localStorage.getItem(`travel-${stateName}`) || "None";
 }
 
-function saveStatus(stateName, newStatus, layer) {
-  // Save to localStorage
+function saveStatus(layer, newStatus) {
+  const stateName = layer.stateName;
   localStorage.setItem(`travel-${stateName}`, newStatus);
 
-  // Update layer color instantly
+  // Update the color immediately
   layer.setStyle({ fillColor: getColor(newStatus) });
 
-  // Close popup (optional)
+  // Optional: close the popup
   layer.closePopup();
 }
 
 // --- Popup builder ---
 
-function openPopup(feature, layer) {
-  const stateName = feature.properties.name;
+function openPopup(layer) {
+  const stateName = layer.stateName;
   const current = getStatus(stateName);
+
+  // ✅ Give each select element a unique id
+  const selectId = `status-select-${stateName.replace(/\s/g, '-')}`;
 
   const popupDiv = document.createElement("div");
   popupDiv.classList.add("popup-form");
@@ -63,7 +70,7 @@ function openPopup(feature, layer) {
   popupDiv.innerHTML = `
     <h3>${stateName}</h3>
     <label>Travel Type:</label><br>
-    <select id="status-select">
+    <select id="${selectId}">
       <option value="None"${current === "None" ? " selected" : ""}>Not Visited</option>
       <option value="Home"${current === "Home" ? " selected" : ""}>Home State</option>
       <option value="Overnight"${current === "Overnight" ? " selected" : ""}>Stayed Overnight</option>
@@ -71,15 +78,18 @@ function openPopup(feature, layer) {
       <option value="Drive-Through"${current === "Drive-Through" ? " selected" : ""}>Drove Through</option>
       <option value="Layover"${current === "Layover" ? " selected" : ""}>Airport Layover Only</option>
     </select><br>
-    <button id="save-btn">💾 Save</button>
+    <button id="save-btn-${stateName.replace(/\s/g, '-')}">💾 Save</button>
   `;
 
-  // Bind popup HTML to layer
+  // Bind popup and open it
   layer.bindPopup(popupDiv).openPopup();
 
-  // Add live event listener to the save button
-  popupDiv.querySelector("#save-btn").addEventListener("click", () => {
-    const selectedValue = popupDiv.querySelector("#status-select").value;
-    saveStatus(stateName, selectedValue, layer);
+  // Attach event listener safely
+  const saveBtn = popupDiv.querySelector(`#save-btn-${stateName.replace(/\s/g, '-')}`);
+  const selectEl = popupDiv.querySelector(`#${selectId}`);
+
+  saveBtn.addEventListener("click", () => {
+    const newVal = selectEl.value;
+    saveStatus(layer, newVal);
   });
 }
