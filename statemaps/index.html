@@ -1,34 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>States Visited Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interactive US States Map</title>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <style>
+    html, body, #map {
+      height: 100%;
+      margin: 0;
+    }
+
+    .legend {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background: white;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 14px;
+      line-height: 1.5;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 3px;
+      display: inline-block;
+    }
+
+    #popup-content select, #popup-content button {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Your States Visisted Map</h1>
   <div id="map"></div>
-
-  <!-- ✅ Legend placed outside of #map -->
-  <div id="legend">
-    <strong>Legend</strong><br>
-    <span style="background:#1b5e20"></span> Home<br>
-    <span style="background:#4caf50"></span> Overnight<br>
-    <span style="background:#81c784"></span> Day Trip<br>
-    <span style="background:#ffb300"></span> Drive-Through<br>
-    <span style="background:#ff7043"></span> Layover<br>
-    <span style="background:#e0e0e0"></span> Not Visited
+  <div class="legend" id="legend">
+    <div class="legend-item"><span class="legend-color" style="background:red"></span>Home State</div>
+    <div class="legend-item"><span class="legend-color" style="background:blue"></span>Stayed Overnight</div>
+    <div class="legend-item"><span class="legend-color" style="background:green"></span>Day Trip</div>
+    <div class="legend-item"><span class="legend-color" style="background:yellow"></span>Drove Through</div>
+    <div class="legend-item"><span class="legend-color" style="background:purple"></span>Airport Layover Only</div>
   </div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="script.js"></script>
+  <script>
+    // Map setup
+    const map = L.map('map').setView([37.8, -96], 4);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 6,
+      minZoom: 3,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    const statusColors = {
+      "Home State": "red",
+      "Stayed Overnight": "blue",
+      "Day Trip": "green",
+      "Drove Through": "yellow",
+      "Airport Layover Only": "purple"
+    };
+
+    let geojsonLayer;
+
+    // Load GeoJSON
+    fetch("us-states.geojson")
+      .then(response => response.json())
+      .then(data => {
+        data.features.forEach(f => {
+          if (!f.properties.status) f.properties.status = "";
+        });
+
+        geojsonLayer = L.geoJSON(data, {
+          style: feature => ({
+            color: "#555",
+            weight: 1,
+            fillOpacity: 0.7,
+            fillColor: statusColors[feature.properties.status] || "#ccc"
+          }),
+          onEachFeature: (feature, layer) => {
+            layer.on("click", () => openPopup(feature, layer));
+          }
+        }).addTo(map);
+      });
+
+    function openPopup(feature, layer) {
+      const currentStatus = feature.properties.status || "";
+      const popupContent = document.createElement("div");
+      popupContent.id = "popup-content";
+      popupContent.innerHTML = `
+        <strong>${feature.properties.name}</strong><br>
+        <label for="status">Status:</label>
+        <select id="status">
+          <option value="">-- Select --</option>
+          ${Object.keys(statusColors)
+            .map(
+              s => `<option value="${s}" ${
+                s === currentStatus ? "selected" : ""
+              }>${s}</option>`
+            )
+            .join("")}
+        </select>
+        <button id="save">Save</button>
+      `;
+
+      layer.bindPopup(popupContent).openPopup();
+
+      popupContent.querySelector("#save").addEventListener("click", () => {
+        const selected = popupContent.querySelector("#status").value;
+        feature.properties.status = selected;
+        layer.setStyle({
+          fillColor: statusColors[selected] || "#ccc"
+        });
+        layer.closePopup();
+      });
+    }
+  </script>
 </body>
-
 </html>
-
-
-
-
-
