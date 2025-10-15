@@ -58,14 +58,16 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Map setup
-    const map = L.map('map').setView([37.8, -96], 4);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 6,
-      minZoom: 3,
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
+    const map = L.map('map', {
+      zoomSnap: 0.5,
+      zoomControl: true,
+      attributionControl: false
+    }).setView([37.8, -96], 4);
+  
+    // Set white background instead of a basemap
+    L.svg({ clickable: true }).addTo(map); // ensures interactivity still works
+    document.getElementById("map").style.background = "white";
+  
     const statusColors = {
       "Home State": "red",
       "Stayed Overnight": "blue",
@@ -73,9 +75,9 @@
       "Drove Through": "yellow",
       "Airport Layover Only": "purple"
     };
-
+  
     let geojsonLayer;
-
+  
     // Load GeoJSON
     fetch("us-states.geojson")
       .then(response => response.json())
@@ -83,7 +85,7 @@
         data.features.forEach(f => {
           if (!f.properties.status) f.properties.status = "";
         });
-
+  
         geojsonLayer = L.geoJSON(data, {
           style: feature => ({
             color: "#555",
@@ -95,8 +97,10 @@
             layer.on("click", () => openPopup(feature, layer));
           }
         }).addTo(map);
+  
+        map.fitBounds(geojsonLayer.getBounds());
       });
-
+  
     function openPopup(feature, layer) {
       const currentStatus = feature.properties.status || "";
       const popupContent = document.createElement("div");
@@ -116,9 +120,9 @@
         </select>
         <button id="save">Save</button>
       `;
-
+  
       layer.bindPopup(popupContent).openPopup();
-
+  
       popupContent.querySelector("#save").addEventListener("click", () => {
         const selected = popupContent.querySelector("#status").value;
         feature.properties.status = selected;
@@ -131,3 +135,4 @@
   </script>
 </body>
 </html>
+
