@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoJSON -> SHP Converter</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="eyebrow">Geo Utilities</div>
+    <h1>GeoJSON <span class="arrow">-></span> <span class="shp">SHP</span></h1>
+    <p class="subtitle">Drop your GeoJSON file and get a ready-to-use Shapefile ZIP.</p>
+  </header>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept=".geojson,.json" />
+    <div class="drop-icon">
+      <svg viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="8" y="8" width="40" height="48" rx="2" stroke="#1e1e2e" stroke-width="2"/>
+        <rect x="8" y="8" width="40" height="48" rx="2" stroke="url(#g1)" stroke-width="2"/>
+        <path d="M20 28 L28 20 L36 28" stroke="#00ff88" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M28 20 L28 38" stroke="#00ff88" stroke-width="2" stroke-linecap="round"/>
+        <path d="M18 44 L38 44" stroke="#1e1e2e" stroke-width="2" stroke-linecap="round"/>
+        <defs>
+          <linearGradient id="g1" x1="8" y1="8" x2="48" y2="56">
+            <stop offset="0%" stop-color="#00ff88"/>
+            <stop offset="100%" stop-color="#ff3cac"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="drop-label">Drop your GeoJSON here</div>
+    <div class="drop-sub">or click to browse &nbsp;·&nbsp; .geojson / .json</div>
+    <div class="file-badge" id="fileBadge">
+      <span id="fileName">-</span>
+      <button class="remove-btn" id="removeBtn" title="Remove">✕</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-panel" id="statsPanel">
+    <div class="stat-card">
+      <div class="stat-label">Features</div>
+      <div class="stat-value" id="statFeatures">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Geometry</div>
+      <div class="stat-value" id="statGeom" style="font-size:14px; padding-top:4px">-</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">File Size</div>
+      <div class="stat-value" id="statSize">-</div>
+    </div>
+  </div>
+
+  <!-- Convert -->
+  <button class="convert-btn" id="convertBtn" disabled>Convert to Shapefile</button>
+  <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill"></div></div>
+
+  <!-- Log -->
+  <div class="log scrollbar-thin" id="log"></div>
+
+  <!-- Error -->
+  <div class="error-box" id="errorBox"></div>
+
+  <!-- Download -->
+  <div class="download-card" id="downloadCard">
+    <svg class="download-icon" viewBox="0 0 40 40" fill="none">
+      <path d="M6 34 H34" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M20 6 L20 28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M11 19 L20 28 L29 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div class="download-info">
+      <div class="download-name" id="downloadName">shapefile.zip</div>
+      <div class="download-meta" id="downloadMeta">Contains .shp, .dbf, .shx, .prj</div>
+    </div>
+    <a class="download-btn" id="downloadLink" href="#" download>Download ZIP</a>
+  </div>
+
+  <footer>
+    <span>100% client-side · no data leaves your browser</span>
+    <span>WGS84 / EPSG:4326</span>
+  </footer>
+</div>
+
+<script>
+// --- Minimal shpwrite implementation ------------------------------------------
+// Implements GeoJSON -> Shapefile (SHP/SHX/DBF/PRJ) entirely in the browser.
+// Supports: Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon
+
+const SHP = (() => {
+  // DBF writer
+  function writeDBF(features) {
+    if (!features.length) return new Uint8Array(32 + 1);
+    const props = features[0].properties || {};
+    const fields = Object.keys(props);
+
+    const headerSize = 32 + fields.length * 32 + 1;
+    const recordSize = 1 + fields.reduce((s, f) => {
+      const v = props[f];
+      const len = typeof v === 'number' ? 18 : Math.min(254, String(v ?? '').length || 10);
+      return s + Math.max(len, 1);
+    }, 0);
+
+    const fieldDefs = fields.map(f => {
+      const v = props[f];
+      const isNum = typeof v === 'number';
+      return { name: f, type: isNum ? 'N' : 'C', len: isNum ? 18 : Math.min(254, Math.max(String(v ?? '').length || 10, 1)) };
+    });
+
+    const totalRecordSize = 1 + fieldDefs.reduce((s, f) => s + f.len, 0);
+    const buf = new ArrayBuffer(headerSize + totalRecordSize * features.length);
+    const dv = new DataView(buf);
+    const u8 = new Uint8Array(buf);
+    const enc = new TextEncoder();
+
+    // Header
+    dv.setUint8(0, 3); // version
+    const now = new Date();
+    dv.setUint8(1, now.getFullYear() - 1900);
+    dv.setUint8(2, now.getMonth() + 1);
+    dv.setUint8(3, now.getDate());
+    dv.setUint32(4, features.length, true);
+    dv.setUint16(8, headerSize, true);
+    dv.setUint16(10, totalRecordSize, true);
+
+    // Field descriptors
+    let fieldOff = 32;
+    for (const fd of fieldDefs) {
+      const nameBytes = enc.encode(fd.name.substring(0, 10));
+      u8.set(nameBytes, fieldOff);
+      dv.setUint8(fieldOff + 11, fd.type.charCodeAt(0));
+      dv.setUint8(fieldOff + 16, fd.len);
+      dv.setUint8(fieldOff + 17, fd.type === 'N' ? 6 : 0);
+      fieldOff += 32;
+    }
+    dv.setUint8(fieldOff, 0x0D); // header terminator
+
+    // Records
+    let recOff = headerSize;
+    for (const feat of features) {
+      dv.setUint8(recOff, 0x20); recOff++; // deletion flag
+      for (const fd of fieldDefs) {
+        const val = (feat.properties || {})[fd.name] ?? '';
+        const str = String(val).substring(0, fd.len).padEnd(fd.len, ' ');
+        const bytes = enc.encode(str);
+        for (let i = 0; i < fd.len; i++) u8[recOff + i] = bytes[i] || 0x20;
+        recOff += fd.len;
+      }
+    }
+    return u8;
+  }
+
+  // SHP/SHX writer
+  function writeShpShx(features, geomType) {
+    // We'll build records then assemble
+    const records = [];
+
+    function coordsToWords(coords, is3d) {
+      // coords: array of [x,y] or [x,y,z]
+      return coords;
+    }
+
+    for (let i = 0; i < features.length; i++) {
+      const geom = features[i].geometry;
+      if (!geom) { records.push(null); continue; }
+      records.push(buildRecord(geom, i + 1));
+    }
+
+    // Calculate sizes
+    let contentLen = 0; // in 16-bit words
+    const offsets = [];
+    for (const r of records) {
+      offsets.push(50 + contentLen); // 50 = file header (100 bytes / 2)
+      contentLen += r ? (4 + r.byteLength / 2) : 4; // 4 words for rec header
+    }
+
+    const fileLen = 50 + contentLen; // in 16-bit words
+    const shpBuf = new ArrayBuffer(fileLen * 2);
+    const shxBuf = new ArrayBuffer(100 + records.length * 8);
+    const shp = new DataView(shpBuf);
+    const shx = new DataView(shxBuf);
+
+    function writeFileHeader(dv, len) {
+      dv.setInt32(0, 9994, false);
+      dv.setInt32(24, len, false);
+      dv.setInt32(28, 1000, true);
+      dv.setInt32(32, geomType, true);
+      // bbox: -180,-90,180,90
+      dv.setFloat64(36, -180, true); dv.setFloat64(44, -90, true);
+      dv.setFloat64(52, 180, true); dv.setFloat64(60, 90, true);
+    }
+
+    writeFileHeader(shp, fileLen);
+    writeFileHeader(shx, 50 + records.length * 4);
+
+    let shpOff = 100;
+    for (let i = 0; i < records.length; i++) {
+      const r = records[i];
+      const off = offsets[i] * 2;
+
+      // SHX entry
+      shx.setInt32(100 + i * 8, offsets[i], false);
+      shx.setInt32(100 + i * 8 + 4, r ? (r.byteLength / 2 + 4) : 2, false);
+
+      // SHP record header (big-endian)
+      shp.setInt32(shpOff, i + 1, false);
+      shp.setInt32(shpOff + 4, r ? r.byteLength / 2 : 2, false);
+      shpOff += 8;
+
+      if (r) {
+        new Uint8Array(shpBuf).set(new Uint8Array(r), shpOff);
+        shpOff += r.byteLength;
+      } else {
+        shp.setInt32(shpOff, 0, true); // null shape
+        shpOff += 4;
+      }
+    }
+
+    return { shp: new Uint8Array(shpBuf), shx: new Uint8Array(shxBuf) };
+  }
+
+  function buildRecord(geom, id) {
+    const type = geom.type;
+    if (type === 'Point') return buildPoint(geom.coordinates);
+    if (type === 'MultiPoint') return buildMultiPoint(geom.coordinates);
+    if (type === 'LineString') return buildPolyline([geom.coordinates]);
+    if (type === 'MultiLineString') return buildPolyline(geom.coordinates);
+    if (type === 'Polygon') return buildPolygon(geom.coordinates);
+    if (type === 'MultiPolygon') return buildPolygon(geom.coordinates.flat());
+    return null;
+  }
+
+  function buildPoint(c) {
+    const buf = new ArrayBuffer(4 + 16);
+    const dv = new DataView(buf);
+    dv.setInt32(0, 1, true);
+    dv.setFloat64(4, c[0], true);
+    dv.setFloat64(12, c[1], true);
+    return buf;
+  }
+
+  function buildMultiPoint(coords) {
+    const n = coords.length;
+    const buf = new ArrayBuffer(4 + 32 + 4 + n * 16);
+    const dv = new DataView(buf);
+    dv.setInt32(0, 8, true); // MultiPoint
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const c of coords) {
+      minX = Math.min(minX, c[0]); minY = Math.min(minY, c[1]);
+      maxX = Math.max(maxX, c[0]); maxY = Math.max(maxY, c[1]);
+    }
+    dv.setFloat64(4, minX, true); dv.setFloat64(12, minY, true);
+    dv.setFloat64(20, maxX, true); dv.setFloat64(28, maxY, true);
+    dv.setInt32(36, n, true);
+    for (let i = 0; i < n; i++) {
+      dv.setFloat64(40 + i * 16, coords[i][0], true);
+      dv.setFloat64(40 + i * 16 + 8, coords[i][1], true);
+    }
+    return buf;
+  }
+
+  function buildPolyline(rings) {
+    const numParts = rings.length;
+    const numPoints = rings.reduce((s, r) => s + r.length, 0);
+    const buf = new ArrayBuffer(4 + 32 + 4 + 4 + numParts * 4 + numPoints * 16);
+    const dv = new DataView(buf);
+    dv.setInt32(0, 3, true); // Polyline
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const ring of rings) for (const c of ring) {
+      minX = Math.min(minX, c[0]); minY = Math.min(minY, c[1]);
+      maxX = Math.max(maxX, c[0]); maxY = Math.max(maxY, c[1]);
+    }
+    dv.setFloat64(4, minX, true); dv.setFloat64(12, minY, true);
+    dv.setFloat64(20, maxX, true); dv.setFloat64(28, maxY, true);
+    dv.setInt32(36, numParts, true);
+    dv.setInt32(40, numPoints, true);
+    let partStart = 0;
+    for (let i = 0; i < numParts; i++) {
+      dv.setInt32(44 + i * 4, partStart, true);
+      partStart += rings[i].length;
+    }
+    let ptOff = 44 + numParts * 4;
+    for (const ring of rings) for (const c of ring) {
+      dv.setFloat64(ptOff, c[0], true); dv.setFloat64(ptOff + 8, c[1], true);
+      ptOff += 16;
+    }
+    return buf;
+  }
+
+  function buildPolygon(rings) {
+    const buf = buildPolyline(rings);
+    new DataView(buf).setInt32(0, 5, true); // Polygon
+    return buf;
+  }
+
+  function detectType(features) {
+    const types = new Set(features.map(f => f.geometry?.type).filter(Boolean));
+    if (types.has('Point') || types.has('MultiPoint')) return 1;
+    if (types.has('LineString') || types.has('MultiLineString')) return 3;
+    if (types.has('Polygon') || types.has('MultiPolygon')) return 5;
+    return 0;
+  }
+
+  function geomTypeName(t) {
+    return { 0: 'Null', 1: 'Point', 3: 'Polyline', 5: 'Polygon', 8: 'MultiPoint' }[t] || 'Mixed';
+  }
+
+  async function convert(geojson) {
+    const features = geojson.type === 'FeatureCollection'
+      ? geojson.features
+      : geojson.type === 'Feature' ? [geojson] : [];
+
+    if (!features.length) throw new Error('No features found in GeoJSON.');
+
+    const geomType = detectType(features);
+    const { shp, shx } = writeShpShx(features, geomType);
+    const dbf = writeDBF(features);
+    const prj = `GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137.0,298.257223563]],PRIMEM["Greenwich",0.0],UNIT["Degree",0.0174532925199433]]`;
+
+    const zip = new JSZip();
+    zip.file('shapefile.shp', shp);
+    zip.file('shapefile.shx', shx);
+    zip.file('shapefile.dbf', dbf);
+    zip.file('shapefile.prj', prj);
+
+    const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    return { blob, features: features.length, geomType: geomTypeName(geomType) };
+  }
+
+  return { convert, detectType, geomTypeName };
+})();
+
+// --- UI Logic -----------------------------------------------------------------
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileBadge = document.getElementById('fileBadge');
+const fileName = document.getElementById('fileName');
+const removeBtn = document.getElementById('removeBtn');
+const statsPanel = document.getElementById('statsPanel');
+const statFeatures = document.getElementById('statFeatures');
+const statGeom = document.getElementById('statGeom');
+const statSize = document.getElementById('statSize');
+const convertBtn = document.getElementById('convertBtn');
+const progressBar = document.getElementById('progressBar');
+const progressFill = document.getElementById('progressFill');
+const logEl = document.getElementById('log');
+const errorBox = document.getElementById('errorBox');
+const downloadCard = document.getElementById('downloadCard');
+const downloadName = document.getElementById('downloadName');
+const downloadMeta = document.getElementById('downloadMeta');
+const downloadLink = document.getElementById('downloadLink');
+
+let currentFile = null;
+let currentGeoJSON = null;
+
+function log(msg, type = '') {
+  logEl.classList.add('visible');
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const line = document.createElement('div');
+  line.className = `log-line ${type}`;
+  line.innerHTML = `<span class="ts">${ts}</span><span class="msg">${msg}</span>`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setProgress(pct) {
+  progressBar.classList.add('visible');
+  progressFill.style.width = pct + '%';
+}
+
+function showError(msg) {
+  errorBox.textContent = '⚠ ' + msg;
+  errorBox.classList.add('visible');
+}
+
+function clearError() {
+  errorBox.classList.remove('visible');
+}
+
+function formatBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function loadFile(file) {
+  clearError();
+  downloadCard.classList.remove('visible');
+  logEl.innerHTML = '';
+  progressBar.classList.remove('visible');
+  progressFill.style.width = '0%';
+
+  currentFile = file;
+  fileName.textContent = file.name;
+  fileBadge.classList.add('visible');
+  dropZone.classList.add('has-file');
+
+  log(`Loaded: ${file.name}`, 'info');
+  log(`Size: ${formatBytes(file.size)}`, 'info');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const json = JSON.parse(e.target.result);
+      currentGeoJSON = json;
+
+      const features = json.type === 'FeatureCollection' ? json.features :
+                       json.type === 'Feature' ? [json] : [];
+
+      const geomType = SHP.detectType(features);
+      statFeatures.textContent = features.length.toLocaleString();
+      statGeom.textContent = SHP.geomTypeName(geomType);
+      statSize.textContent = formatBytes(file.size);
+      statsPanel.classList.add('visible');
+
+      log(`Features: ${features.length}`, 'success');
+      log(`Geometry: ${SHP.geomTypeName(geomType)}`, 'success');
+      convertBtn.disabled = false;
+    } catch (err) {
+      showError('Invalid JSON: ' + err.message);
+      log('Parse error: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetFile() {
+  currentFile = null;
+  currentGeoJSON = null;
+  fileBadge.classList.remove('visible');
+  dropZone.classList.remove('has-file');
+  statsPanel.classList.remove('visible');
+  convertBtn.disabled = true;
+  downloadCard.classList.remove('visible');
+  progressBar.classList.remove('visible');
+  logEl.innerHTML = '';
+  logEl.classList.remove('visible');
+  clearError();
+  fileInput.value = '';
+}
+
+// Drag and drop
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+});
+
+removeBtn.addEventListener('click', e => { e.stopPropagation(); resetFile(); });
+
+convertBtn.addEventListener('click', async () => {
+  if (!currentGeoJSON) return;
+  convertBtn.disabled = true;
+  clearError();
+  downloadCard.classList.remove('visible');
+  logEl.innerHTML = '';
+  logEl.classList.add('visible');
+  progressBar.classList.add('visible');
+
+  try {
+    log('Starting conversion...', 'info');
+    setProgress(10);
+    await new Promise(r => setTimeout(r, 80));
+
+    log('Parsing features...', 'info');
+    setProgress(30);
+    await new Promise(r => setTimeout(r, 80));
+
+    log('Writing .shp / .shx...', 'info');
+    setProgress(55);
+    await new Promise(r => setTimeout(r, 80));
+
+    log('Writing .dbf (attributes)...', 'info');
+    setProgress(70);
+    await new Promise(r => setTimeout(r, 80));
+
+    log('Writing .prj (WGS84)...', 'info');
+    setProgress(80);
+    await new Promise(r => setTimeout(r, 80));
+
+    const result = await SHP.convert(currentGeoJSON);
+    setProgress(95);
+    await new Promise(r => setTimeout(r, 100));
+
+    const url = URL.createObjectURL(result.blob);
+    const baseName = (currentFile?.name || 'shapefile').replace(/\.(geojson|json)$/i, '');
+    const zipName = baseName + '_shapefile.zip';
+
+    downloadLink.href = url;
+    downloadLink.download = zipName;
+    downloadName.textContent = zipName;
+    downloadMeta.textContent = `${formatBytes(result.blob.size)} · ${result.features} features · ${result.geomType} · WGS84`;
+    downloadCard.classList.add('visible');
+
+    setProgress(100);
+    log(`Done! ${result.features} features converted.`, 'success');
+    log(`Output: ${zipName} (${formatBytes(result.blob.size)})`, 'success');
+  } catch (err) {
+    showError(err.message);
+    log('Error: ' + err.message, 'error');
+    setProgress(0);
+  } finally {
+    convertBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
